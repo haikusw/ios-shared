@@ -142,8 +142,8 @@
 
 
 /**
- @keypath(object.key.path)
- @keypath(object, key.path)
+ @SDKeypath(object.key.path)
+ @SDKeypath(object, key.path)
 
  This macro returns an NSString representing @"key.path" while also doing compile-time verification that
  such a keypath exists on `object`. Use this in place of direct string constants to avoid stringly-typed
@@ -155,8 +155,8 @@
  https://github.com/ReactiveCocoa/ReactiveCocoa/blob/master/ReactiveCocoaFramework/ReactiveCocoa/extobjc/EXTKeyPathCoding.h
  
  */
-#define keypath(...) \
-    macro_dispatcher(keypath, __VA_ARGS__)(__VA_ARGS__)
+#define SDKeypath(...) \
+    macro_dispatcher(SDKeypath, __VA_ARGS__)(__VA_ARGS__)
 
 
 /**
@@ -221,10 +221,10 @@
     __unsafe_unretained __typeof(v_in) v_out = v_in \
 
 
-// Support macros for @keypath.
+// Support macros for @SDKeypath.
 
-#define keypath1(KEYPATH) \
+#define SDKeypath1(KEYPATH) \
     (((void)(NO && ((void)KEYPATH, NO)), strchr(# KEYPATH, '.') + 1))
 
-#define keypath2(OBJECT, KEYPATH) \
+#define SDKeypath2(OBJECT, KEYPATH) \
     (((void)(NO && ((void)OBJECT.KEYPATH, NO)), # KEYPATH))
