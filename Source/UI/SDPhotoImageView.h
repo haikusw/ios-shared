@@ -34,4 +34,14 @@
  */
 @property (nonatomic, readonly) UIImageView *imageView;
 
+/**
+ *  Background color
+ */
+@property (nonatomic, strong) UIColor *backgroundColor UI_APPEARANCE_SELECTOR;
+
+/**
+ *  Zoom Scale
+ */
+@property (nonatomic) CGFloat zoomScale;
+
 @end

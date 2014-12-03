@@ -64,4 +64,9 @@
  */
 - (void)setCurrentPage:(NSInteger)currentPage animated:(BOOL)animated;
 
+/**
+ *  Background color of the scroll view.
+ */
+@property (nonatomic, strong) UIColor *backgroundColor UI_APPEARANCE_SELECTOR;
+
 @end
