@@ -65,6 +65,8 @@
                                                             multiplier:1.0
                                                               constant:self.gap]];
         }
+    } else {
+        self.lastView = nil;
     }
 }
 
