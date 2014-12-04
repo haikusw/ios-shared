@@ -8,142 +8,179 @@
 
 #import "SDAutolayoutStackView.h"
 
+@interface SDAutolayoutStackView ()
+@property (nonatomic, strong) NSLayoutConstraint *lastConstraint;
+@property (nonatomic, strong) UIView *lastView;
+@end
+
 @implementation SDAutolayoutStackView
 
 - (void)didAddSubview:(UIView *)subview
 {
     [super didAddSubview:subview];
-    [self p_applyConstraints];
+    [self addConstraintsForSubview:subview];
 }
 
 - (void)willRemoveSubview:(UIView *)subview
 {
     [super willRemoveSubview:subview];
-    [self p_applyConstraints];
+    BOOL isVertical = self.orientation == SDAutolayoutStackViewOrientationVertical;
+    // if there will be remaining subviews
+    if (self.subviews.count > 1) {
+        NSUInteger index = [self.subviews indexOfObject:self.lastView];
+        // if we are removing the first subview
+        if (index == 0) {
+            // find the new top and connect it
+            UIView *newTop = self.subviews[1];
+            [self addConstraint:[NSLayoutConstraint constraintWithItem:newTop
+                                                             attribute:isVertical ? NSLayoutAttributeTop : NSLayoutAttributeLeading
+                                                             relatedBy:NSLayoutRelationEqual
+                                                                toItem:self
+                                                             attribute:isVertical ? NSLayoutAttributeTop : NSLayoutAttributeLeading
+                                                            multiplier:1.0
+                                                              constant:isVertical ? self.edgeInsets.top : self.edgeInsets.left]];
+
+            
+        // if we are removing the last one
+        } else if (index == self.subviews.count - 1) {
+            // find the previous one and connect it to the bottom
+            self.lastView = self.subviews[index - 1];
+            self.lastConstraint = [NSLayoutConstraint constraintWithItem:self.lastView
+                                                               attribute:isVertical ? NSLayoutAttributeBottom : NSLayoutAttributeTrailing
+                                                               relatedBy:NSLayoutRelationEqual
+                                                                  toItem:self
+                                                               attribute:isVertical ? NSLayoutAttributeBottom : NSLayoutAttributeTrailing
+                                                              multiplier:1.0
+                                                                constant:isVertical ? -self.edgeInsets.bottom : -self.edgeInsets.right];
+        // removing a middle subview
+        } else {
+            // connect the previous and next subviews
+            UIView *previousView = self.subviews[index - 1];
+            UIView *nextView = self.subviews[index + 1];
+            [self addConstraint:[NSLayoutConstraint constraintWithItem:nextView
+                                                             attribute:isVertical ? NSLayoutAttributeTop : NSLayoutAttributeLeading
+                                                             relatedBy:NSLayoutRelationEqual
+                                                                toItem:previousView
+                                                             attribute:isVertical ? NSLayoutAttributeBottom : NSLayoutAttributeTrailing
+                                                            multiplier:1.0
+                                                              constant:self.gap]];
+        }
+    } else {
+        self.lastView = nil;
+    }
 }
 
-- (void)p_applyConstraints
-{
-    // Remove all constraints on this container view.
-    [self removeConstraints:self.constraints];
-    
-    NSLayoutConstraint *lastConstraint = nil;
-    UIView *previousView = nil;
-    
-    for (UIView *view in self.subviews)
-    {
-        switch (self.orientation) {
-            case SDAutolayoutStackViewOrientationVertical:
+- (void) addConstraintsForSubview:(UIView *)view {
+    switch (self.orientation) {
+        case SDAutolayoutStackViewOrientationVertical:
+        {
+            // If this is the first (topmost) view, attach it to the parent view at the top.
+            if (!self.lastView)
             {
-                // If this is the first (topmost) view, attach it to the parent view at the top.
-                if ([self.subviews.firstObject isEqual:view])
-                {
-                    [self addConstraint:[NSLayoutConstraint constraintWithItem:view
-                                                                     attribute:NSLayoutAttributeTop
-                                                                     relatedBy:NSLayoutRelationEqual
-                                                                        toItem:self
-                                                                     attribute:NSLayoutAttributeTop
-                                                                    multiplier:1.0
-                                                                      constant:self.edgeInsets.top]];
-                }
-                // Otherwise attach this view to the previous view's bottom.
-                else
-                {
-                    [self addConstraint:[NSLayoutConstraint constraintWithItem:view
-                                                                     attribute:NSLayoutAttributeTop
-                                                                     relatedBy:NSLayoutRelationEqual
-                                                                        toItem:previousView
-                                                                     attribute:NSLayoutAttributeBottom
-                                                                    multiplier:1.0
-                                                                      constant:self.gap]];
-                }
-                
-                // All child views have leading and trailing constraints.
-                [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-(left)-[view]-(right)-|"
-                                                                             options:0
-                                                                             metrics:@{ @"left" : @(self.edgeInsets.left),
-                                                                                        @"right" : @(self.edgeInsets.right) }
-                                                                               views:NSDictionaryOfVariableBindings(view)]];
-                
-                // If there is already a last constraint, remove it.
-                if (lastConstraint)
-                    [self removeConstraint:lastConstraint];
-                
-                
-                // Add the last constraint to attach view to the bottom of container
-                // view.
-                lastConstraint = [NSLayoutConstraint constraintWithItem:view
-                                                                attribute:NSLayoutAttributeBottom
-                                                                relatedBy:NSLayoutRelationEqual
-                                                                   toItem:self
-                                                                attribute:NSLayoutAttributeBottom
-                                                               multiplier:1.0
-                                                                 constant:-self.edgeInsets.bottom];
-                
-                [self addConstraint:lastConstraint];
+                [self addConstraint:[NSLayoutConstraint constraintWithItem:view
+                                                                 attribute:NSLayoutAttributeTop
+                                                                 relatedBy:NSLayoutRelationEqual
+                                                                    toItem:self
+                                                                 attribute:NSLayoutAttributeTop
+                                                                multiplier:1.0
+                                                                  constant:self.edgeInsets.top]];
+            }
+            // Otherwise attach this view to the previous view's bottom.
+            else
+            {
+                [self addConstraint:[NSLayoutConstraint constraintWithItem:view
+                                                                 attribute:NSLayoutAttributeTop
+                                                                 relatedBy:NSLayoutRelationEqual
+                                                                    toItem:self.lastView
+                                                                 attribute:NSLayoutAttributeBottom
+                                                                multiplier:1.0
+                                                                  constant:self.gap]];
+            }
+            
+            // All child views have leading and trailing constraints.
+            [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|-(left)-[view]-(right)-|"
+                                                                         options:0
+                                                                         metrics:@{ @"left" : @(self.edgeInsets.left),
+                                                                                    @"right" : @(self.edgeInsets.right) }
+                                                                           views:NSDictionaryOfVariableBindings(view)]];
+            
+            // If there is already a last constraint, remove it.
+            if (self.lastConstraint)
+                [self removeConstraint:self.lastConstraint];
+            
+            
+            // Add the last constraint to attach view to the bottom of container
+            // view.
+            self.lastConstraint = [NSLayoutConstraint constraintWithItem:view
+                                                               attribute:NSLayoutAttributeBottom
+                                                               relatedBy:NSLayoutRelationEqual
+                                                                  toItem:self
+                                                               attribute:NSLayoutAttributeBottom
+                                                              multiplier:1.0
+                                                                constant:-self.edgeInsets.bottom];
+            
+            [self addConstraint:self.lastConstraint];
+            self.lastView = view;
 
-                break;
-            }
-            case SDAutolayoutStackViewOrientationHorizontal:
-            {
-                // If this is the first (leading) view, attach it to the parent view's leading side.
-                if ([self.subviews.firstObject isEqual:view])
-                {
-                    [self addConstraint:[NSLayoutConstraint constraintWithItem:view
-                                                                     attribute:NSLayoutAttributeLeading
-                                                                     relatedBy:NSLayoutRelationEqual
-                                                                        toItem:self
-                                                                     attribute:NSLayoutAttributeLeading
-                                                                    multiplier:1.0
-                                                                      constant:self.edgeInsets.top]];
-                }
-                // Otherwise attach this view to the previous view's trailing side.
-                else
-                {
-                    [self addConstraint:[NSLayoutConstraint constraintWithItem:view
-                                                                     attribute:NSLayoutAttributeLeading
-                                                                     relatedBy:NSLayoutRelationEqual
-                                                                        toItem:previousView
-                                                                     attribute:NSLayoutAttributeTrailing
-                                                                    multiplier:1.0
-                                                                      constant:self.gap]];
-                }
-                
-                // All child views have top and bottom constraints.
-                [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(top)-[view]-(bottom)-|"
-                                                                             options:0
-                                                                             metrics:@{ @"top" : @(self.edgeInsets.top),
-                                                                                        @"bottom" : @(self.edgeInsets.bottom) }
-                                                                               views:NSDictionaryOfVariableBindings(view)]];
-                
-                // If there is already a last constraint, remove it.
-                if (lastConstraint)
-                    [self removeConstraint:lastConstraint];
-                
-                
-                // Add the last constraint to attach view to the trailing edge of container
-                // view.
-                lastConstraint = [NSLayoutConstraint constraintWithItem:view
-                                                              attribute:NSLayoutAttributeTrailing
-                                                              relatedBy:NSLayoutRelationEqual
-                                                                 toItem:self
-                                                              attribute:NSLayoutAttributeTrailing
-                                                             multiplier:1.0
-                                                               constant:-self.edgeInsets.right];
-                
-                [self addConstraint:lastConstraint];
-                
-                break;
-            }
-            default:
-                break;
+            break;
         }
-        
-        // Set this view to previousView for next iteration of this loop.
-        previousView = view;
+        case SDAutolayoutStackViewOrientationHorizontal:
+        {
+            // If this is the first (leading) view, attach it to the parent view's leading side.
+            if (!self.lastView)
+            {
+                [self addConstraint:[NSLayoutConstraint constraintWithItem:view
+                                                                 attribute:NSLayoutAttributeLeading
+                                                                 relatedBy:NSLayoutRelationEqual
+                                                                    toItem:self
+                                                                 attribute:NSLayoutAttributeLeading
+                                                                multiplier:1.0
+                                                                  constant:self.edgeInsets.left]];
+            }
+            // Otherwise attach this view to the previous view's trailing side.
+            else
+            {
+                [self addConstraint:[NSLayoutConstraint constraintWithItem:view
+                                                                 attribute:NSLayoutAttributeLeading
+                                                                 relatedBy:NSLayoutRelationEqual
+                                                                    toItem:self.lastView
+                                                                 attribute:NSLayoutAttributeTrailing
+                                                                multiplier:1.0
+                                                                  constant:self.gap]];
+            }
+            
+            // All child views have top and bottom constraints.
+            [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|-(top)-[view]-(bottom)-|"
+                                                                         options:0
+                                                                         metrics:@{ @"top" : @(self.edgeInsets.top),
+                                                                                    @"bottom" : @(self.edgeInsets.bottom) }
+                                                                           views:NSDictionaryOfVariableBindings(view)]];
+            
+            // If there is already a last constraint, remove it.
+            if (self.lastConstraint)
+                [self removeConstraint:self.lastConstraint];
+            
+            
+            // Add the last constraint to attach view to the trailing edge of container
+            // view.
+            self.lastConstraint = [NSLayoutConstraint constraintWithItem:view
+                                                               attribute:NSLayoutAttributeTrailing
+                                                               relatedBy:NSLayoutRelationEqual
+                                                                  toItem:self
+                                                               attribute:NSLayoutAttributeTrailing
+                                                              multiplier:1.0
+                                                                constant:-self.edgeInsets.right];
+            
+            [self addConstraint:self.lastConstraint];
+            self.lastView = view;
+            
+            break;
+        }
+        default:
+            break;
     }
     
-    [self setNeedsUpdateConstraints];
+
 }
 
 @end
