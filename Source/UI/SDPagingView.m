@@ -35,7 +35,7 @@
 
 - (void)_initialize
 {
-    _currentPage = NSIntegerMax;
+    _currentPage = 0;
     
     _scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
     _scrollView.delegate = self;
@@ -52,12 +52,18 @@
     _scrollView.pagingEnabled = YES;
     _scrollView.showsVerticalScrollIndicator = NO;
     _scrollView.showsHorizontalScrollIndicator = NO;
-    _scrollView.backgroundColor = _backgroundColor;
+    _scrollView.backgroundColor = [UIColor blackColor];
     _scrollView.scrollsToTop = NO;
     
     [self addSubview:_scrollView];
     
     self.spaceBetweenPages = 20;
+}
+
+- (void)setBackgroundColor:(UIColor *)color
+{
+    [super setBackgroundColor:color];
+    _scrollView.backgroundColor = self.backgroundColor;
 }
 
 - (void)setDataSource:(__strong id<SDPagingViewDataSource>)dataSource
@@ -79,13 +85,9 @@
         
     _spaceBetweenPages = spaceBetweenPages;
     
-    CGRect scrollViewFrame = self.bounds;
-    scrollViewFrame.origin.x -= _spaceBetweenPages / 2;
-    scrollViewFrame.size.width += spaceBetweenPages;
-    _scrollView.frame = CGRectIntegral(scrollViewFrame);
-    _scrollView.contentSize = CGSizeMake(_scrollView.frame.size.width * _totalCount, _scrollView.frame.size.height);
+    [self layoutScrollView];
     
-    [self layoutViewsForPage:_currentPage];
+    [self layoutViewsForPage];
 }
 
 - (NSInteger)currentPage
@@ -107,7 +109,7 @@
         CGRect rect = CGRectIntegral(CGRectMake(_scrollView.frame.size.width * _currentPage, 0, _scrollView.frame.size.width, _scrollView.frame.size.height));
         [_scrollView scrollRectToVisible:rect animated:animated];
         if (!animated)
-            [self layoutViewsForPage:self.currentPage];
+            [self layoutViewsForPage];
     }
 }
 
@@ -117,7 +119,7 @@
     if (!dataSource)
         return;
     
-    _currentPage = NSIntegerMax;
+    _currentPage = 0;
     
     _totalCount = [dataSource numberOfViewsInPagingView:self];
     _scrollView.contentSize = CGSizeMake(_scrollView.frame.size.width * _totalCount, _scrollView.frame.size.height);
@@ -135,9 +137,26 @@
 
 #pragma mark - Layout
 
-- (void)layoutViewsForPage:(NSInteger)page
+- (void)layoutScrollView
 {
+    CGRect scrollViewFrame = self.bounds;
+    scrollViewFrame.origin.x -= _spaceBetweenPages / 2;
+    scrollViewFrame.size.width += _spaceBetweenPages;
+    _scrollView.frame = CGRectIntegral(scrollViewFrame);
+    _scrollView.contentSize = CGSizeMake(_scrollView.frame.size.width * _totalCount, _scrollView.frame.size.height);
+    
+    CGRect rect = CGRectIntegral(CGRectMake(_scrollView.frame.size.width * _currentPage, 0, _scrollView.frame.size.width, _scrollView.frame.size.height));
+    [_scrollView scrollRectToVisible:rect animated:NO];
+}
+
+- (void)layoutViewsForPage
+{
+    static NSInteger lastPageLayedOut = NSIntegerMax;
+    
     __strong id<SDPagingViewDataSource> dataSource = self.dataSource;
+    
+    if (dataSource == nil)
+        return;
 
     UIView *oldCenter = _centerView;
     UIView *oldRight = _rightView;
@@ -145,14 +164,14 @@
     
     BOOL centerChanged = YES;
     
-    if (_currentPage < page)
+    if (lastPageLayedOut < _currentPage)
     {
         _centerView = oldRight;
         _leftView = oldCenter;
         _rightView = oldLeft;
     }
     else
-    if (_currentPage > page)
+    if (lastPageLayedOut > _currentPage)
     {
         _centerView = oldLeft;
         _leftView = oldRight;
@@ -163,7 +182,7 @@
         centerChanged = NO;
     }
     
-    _currentPage = page;
+    lastPageLayedOut = _currentPage;
     
     CGFloat halfSpace = _spaceBetweenPages / 2;
     CGFloat fullSpace = _spaceBetweenPages;
@@ -177,7 +196,7 @@
         [dataSource pagingView:self viewBecameCenter:_centerView atIndex:_currentPage];
     
     // the view to the right
-    if (page + 1 < _totalCount)
+    if (_currentPage + 1 < _totalCount)
     {
         [dataSource pagingView:self updateView:_rightView atIndex:_currentPage + 1];
         _rightView.frame = CGRectIntegral(CGRectMake((_scrollView.contentOffset.x + _scrollView.frame.size.width) + halfSpace, 0, _scrollView.frame.size.width - fullSpace, _scrollView.frame.size.height));
@@ -189,7 +208,7 @@
     }
     
     // the view to the left
-    if (page - 1 >= 0)
+    if (_currentPage - 1 >= 0)
     {
         [dataSource pagingView:self updateView:_leftView atIndex:_currentPage - 1];
         _leftView.frame = CGRectIntegral(CGRectMake((_scrollView.contentOffset.x - _scrollView.frame.size.width) + halfSpace, 0, _scrollView.frame.size.width - fullSpace, _scrollView.frame.size.height));
@@ -207,25 +226,24 @@
 {
     [super layoutSubviews];
     
-    CGFloat pageWidth = _scrollView.frame.size.width;
-    NSInteger page = (NSInteger)floor((_scrollView.contentOffset.x - pageWidth / 2) / pageWidth) + 1;
-    
-    if (page == _currentPage)
-        return;
+    [self layoutScrollView];
 
-    [self layoutViewsForPage:page];
+    [self layoutViewsForPage];
 }
 
 #pragma mark - Scrollview delegates
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
 {
+    CGFloat pageWidth = _scrollView.frame.size.width;
+    _currentPage = (NSInteger)floor((_scrollView.contentOffset.x - pageWidth / 2) / pageWidth) + 1;
+    
     [self layoutSubviews];
 }
 
 - (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
 {
-    [self layoutViewsForPage:self.currentPage];
+    [self layoutViewsForPage];
 }
 
 @end

@@ -20,15 +20,15 @@
 - (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
-		
-    self.backgroundColor = _backgroundColor;
+	
+    self.backgroundColor = [UIColor blackColor];
     self.userInteractionEnabled = NO;
     self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     self.userInteractionEnabled = YES;
     self.opaque = YES;
     
     _scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
-    _scrollView.backgroundColor = _backgroundColor;
+    _scrollView.backgroundColor = self.backgroundColor;
     _scrollView.delegate = self;
     _scrollView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _scrollView.bouncesZoom = YES;
@@ -59,6 +59,12 @@
     [_imageView addGestureRecognizer:_doubleTapGesture];
 
     return self;
+}
+
+- (void)setBackgroundColor:(UIColor *)color
+{
+    [super setBackgroundColor:color];
+    _scrollView.backgroundColor = self.backgroundColor;
 }
 
 - (void)setFrame:(CGRect)frame
