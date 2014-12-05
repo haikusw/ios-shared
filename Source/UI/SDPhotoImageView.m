@@ -20,7 +20,7 @@
 - (id)initWithFrame:(CGRect)frame
 {
     self = [super initWithFrame:frame];
-		
+	
     self.backgroundColor = [UIColor blackColor];
     self.userInteractionEnabled = NO;
     self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
@@ -28,7 +28,7 @@
     self.opaque = YES;
     
     _scrollView = [[UIScrollView alloc] initWithFrame:self.bounds];
-    _scrollView.backgroundColor = [UIColor blackColor];
+    _scrollView.backgroundColor = self.backgroundColor;
     _scrollView.delegate = self;
     _scrollView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _scrollView.bouncesZoom = YES;
@@ -61,6 +61,12 @@
     return self;
 }
 
+- (void)setBackgroundColor:(UIColor *)color
+{
+    [super setBackgroundColor:color];
+    _scrollView.backgroundColor = self.backgroundColor;
+}
+
 - (void)setFrame:(CGRect)frame
 {
     [super setFrame:frame];
@@ -89,6 +95,19 @@
 - (UIView *)viewForZoomingInScrollView:(UIScrollView *)scrollView
 {
     return _imageView;
+}
+
+#pragma mark Zoom Scale
+
+- (CGFloat)zoomScale
+{
+    return _scrollView.zoomScale;
+}
+
+- (void)setZoomScale:(CGFloat)value
+{
+    CGRect zoomRect = [self zoomRectForScale:value withCenter:self.center];
+    [_scrollView zoomToRect:zoomRect animated:YES];
 }
 
 #pragma mark Utility methods

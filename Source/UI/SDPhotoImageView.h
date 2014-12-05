@@ -34,4 +34,9 @@
  */
 @property (nonatomic, readonly) UIImageView *imageView;
 
+/**
+ *  Zoom Scale
+ */
+@property (nonatomic) CGFloat zoomScale;
+
 @end
