@@ -126,12 +126,20 @@
 {
     // Dismiss any modals that might be currently visible.
     UINavigationController* selectedNavController = (UINavigationController*)self.globalPullNavController.selectedViewController;
-    if(selectedNavController.visibleViewController.presentingViewController)
-        [selectedNavController.visibleViewController.presentingViewController dismissViewControllerAnimated:NO completion:nil];
+    if(selectedNavController.visibleViewController.presentingViewController) {
+        [selectedNavController.visibleViewController.presentingViewController dismissViewControllerAnimated:NO completion:^{
+            // Now navigate.
+            if([self navigateToTopLevelController:topLevelViewControllerClass])
+                [(UINavigationController*)self.globalPullNavController.selectedViewController popToRootViewControllerAnimated:animate];
 
-    // Now navigate.
-    if([self navigateToTopLevelController:topLevelViewControllerClass])
-        [(UINavigationController*)self.globalPullNavController.selectedViewController popToRootViewControllerAnimated:animate];
+        }];
+    }
+    else {
+        // Now navigate.
+        if([self navigateToTopLevelController:topLevelViewControllerClass])
+            [(UINavigationController*)self.globalPullNavController.selectedViewController popToRootViewControllerAnimated:animate];
+    }
+
 }
 
 #pragma mark - Navigation Automation
