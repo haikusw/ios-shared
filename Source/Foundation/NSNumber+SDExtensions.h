@@ -30,4 +30,8 @@
  */
 + (NSString *)stringFromNumber:(NSNumber *)argNumber;
 
+/**
+ A currency formatter that converts a number into a string like "$12.31" */
++ (NSNumberFormatter *) commonCurrencyFormatter;
+
 @end
