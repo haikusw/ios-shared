@@ -38,299 +38,333 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
 
 @implementation SDKeychain
 
-+ (NSString*)stringForKey:(NSString*)key serviceName:(NSString *)serviceName
++ (NSString*)stringForKey:(NSString*)key serviceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup
 {
-	OSStatus status;
-
-    NSDictionary *query = [NSDictionary dictionaryWithObjectsAndKeys:(id)kCFBooleanTrue, kSecReturnData,
-                           kSecClassGenericPassword, kSecClass,
-                           key, kSecAttrAccount,
-                           serviceName, kSecAttrService,
-                           nil];
+    OSStatus status;
+    
+    NSMutableDictionary *query = [NSMutableDictionary dictionaryWithDictionary: @{
+                                                                                  (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+                                                                                  (__bridge id)kSecAttrAccount: key,
+                                                                                  (__bridge id)kSecAttrService: serviceName,
+                                                                                  (__bridge id)kSecReturnData: (id) kCFBooleanTrue
+                                                                                  }];
+    
+#if !TARGET_IPHONE_SIMULATOR
+    if (accessGroup) {
+        query[(__bridge id)kSecAttrAccessGroup] = [NSString stringWithFormat:@"%@%@", [SDKeychain bundleSeedID], accessGroup];
+    }
+#endif
+    
+    if (synchronizeViaiCloud) {
+        query[(__bridge id)(kSecAttrSynchronizable)] = @YES;
+    }
     
     CFDataRef stringData = NULL;
     status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef*)&stringData);
-
-	if (status) 
+    
+    if (status)
         return nil;
-	
+    
     NSString *string = [[NSString alloc] initWithData:(__bridge id)stringData encoding:NSUTF8StringEncoding];
     if (stringData)
         CFRelease(stringData);
-
-	return string;	
+    
+    return string;
 }
 
-+ (BOOL)setString:(NSString*)string forKey:(NSString*)key serviceName:(NSString *)serviceName
++ (BOOL)setString:(NSString*)string forKey:(NSString*)key serviceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup
 {
-	if (!string)  
+    NSMutableDictionary *spec = [NSMutableDictionary dictionaryWithDictionary: @{
+                                                                                 (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+                                                                                 (__bridge id)kSecAttrAccount: key,
+                                                                                 (__bridge id)kSecAttrService: serviceName
+                                                                                 }];
+#if !TARGET_IPHONE_SIMULATOR
+    if (accessGroup) {
+        spec[(__bridge id)kSecAttrAccessGroup] = [NSString stringWithFormat:@"%@%@", [SDKeychain bundleSeedID], accessGroup];
+    }
+#endif
+    
+    if (synchronizeViaiCloud) {
+        spec[(__bridge id)(kSecAttrSynchronizable)] = @YES;
+    }
+    
+    if (!string)
     {
-		//Need to delete the Key 
-        NSDictionary *spec = [NSDictionary dictionaryWithObjectsAndKeys:(__bridge id)kSecClassGenericPassword, kSecClass, key, kSecAttrAccount, serviceName, kSecAttrService, nil];
+        //Need to delete the Key
         return !SecItemDelete((__bridge CFDictionaryRef)spec);
-    } 
+    }
     else
     {
         NSData *stringData = [string dataUsingEncoding:NSUTF8StringEncoding];
-        NSDictionary *spec = [NSDictionary dictionaryWithObjectsAndKeys:(__bridge id)kSecClassGenericPassword, kSecClass, key, kSecAttrAccount, serviceName, kSecAttrService, nil];
         
         if(!string)
             return !SecItemDelete((__bridge CFDictionaryRef)spec);
         else
-        if ([SDKeychain stringForKey:key serviceName:serviceName])
-        {
-            NSDictionary *update = [NSDictionary dictionaryWithObject:stringData forKey:(__bridge id)kSecValueData];
-            return !SecItemUpdate((__bridge CFDictionaryRef)spec, (__bridge CFDictionaryRef)update);
-        }
-        else
-        {
-            NSMutableDictionary *data = [NSMutableDictionary dictionaryWithDictionary:spec];
-            [data setObject:stringData forKey:(__bridge id)kSecValueData];
-            return !SecItemAdd((__bridge CFDictionaryRef)data, NULL);
-        }
+            if ([SDKeychain stringForKey:key serviceName:serviceName synchronizeViaiCloud:synchronizeViaiCloud accessGroup:accessGroup])
+            {
+                NSDictionary *update = [NSDictionary dictionaryWithObject:stringData forKey:(__bridge id)kSecValueData];
+                OSStatus status = SecItemUpdate((__bridge CFDictionaryRef)spec, (__bridge CFDictionaryRef)update);
+                return !status;
+            }
+            else
+            {
+                NSMutableDictionary *data = [NSMutableDictionary dictionaryWithDictionary:spec];
+                [data setObject:stringData forKey:(__bridge id)kSecValueData];
+                OSStatus status = SecItemAdd((__bridge CFDictionaryRef)data, NULL);
+                return !status;
+            }
     }
 }
 
-+ (NSString *)getPasswordForUsername:(NSString *)username andServiceName:(NSString *)serviceName error:(NSError **)error
++ (NSString*)stringForKey:(NSString*)key serviceName:(NSString *)serviceName
 {
-	if (!username || !serviceName)
-	{
-		if (error != nil)
-			*error = [NSError errorWithDomain:SDKeychainErrorDomain code:-2000 userInfo:nil];
-		return nil;
-	}
-
-	if (error != nil)
-		*error = nil;
-
-	// Set up a query dictionary with the base query attributes: item type (generic), username, and service
-
-	NSArray *keys = [[NSArray alloc] initWithObjects:(__bridge NSString *)kSecClass, kSecAttrAccount, kSecAttrService, nil];
-	NSArray *objects = [[NSArray alloc] initWithObjects:(__bridge NSString *)kSecClassGenericPassword, username, serviceName, nil];
-
-	NSMutableDictionary *query = [[NSMutableDictionary alloc] initWithObjects:objects forKeys:keys];
-
-	// First do a query for attributes, in case we already have a Keychain item with no password data set.
-	// One likely way such an incorrect item could have come about is due to the previous (incorrect)
-	// version of this code (which set the password as a generic attribute instead of password data).
-
-	NSMutableDictionary *attributeQuery = [query mutableCopy];
-	[attributeQuery setObject:(id) kCFBooleanTrue forKey:(__bridge id)kSecReturnAttributes];
-	CFTypeRef cfResult = NULL;
-	OSStatus status = SecItemCopyMatching( (__bridge CFDictionaryRef)attributeQuery, &cfResult);
-	if (cfResult)
-		CFRelease(cfResult);
-
-
-	if (status != noErr)
-	{
-		// No existing item found--simply return nil for the password
-		if (error != nil && status != errSecItemNotFound)
-		{
-			//Only return an error if a real exception happened--not simply for "not found."
-			*error = [NSError errorWithDomain:SDKeychainErrorDomain code:status userInfo:nil];
-		}
-
-		return nil;
-	}
-
-	// We have an existing item, now query for the password data associated with it.
-
-	NSData *resultData = nil;
-	NSMutableDictionary *passwordQuery = [query mutableCopy];
-	[passwordQuery setObject:(id) kCFBooleanTrue forKey:(__bridge id)kSecReturnData];
-
-	CFTypeRef cfResultData = NULL;
-	status = SecItemCopyMatching( (__bridge CFDictionaryRef)passwordQuery, &cfResultData );
-	resultData = (__bridge NSData*)cfResultData;
-
-
-	if (status != noErr)
-	{
-		if (status == errSecItemNotFound)
-		{
-			// We found attributes for the item previously, but no password now, so return a special error.
-			// Users of this API will probably want to detect this error and prompt the user to
-			// re-enter their credentials.  When you attempt to store the re-entered credentials
-			// using storeUsername:andPassword:forServiceName:updateExisting:error
-			// the old, incorrect entry will be deleted and a new one with a properly encrypted
-			// password will be added.
-			if (error != nil)
-				*error = [NSError errorWithDomain:SDKeychainErrorDomain code:-1999 userInfo:nil];
-		}
-		else
-		{
-			// Something else went wrong. Simply return the normal Keychain API error code.
-			if (error != nil)
-				*error = [NSError errorWithDomain:SDKeychainErrorDomain code:status userInfo:nil];
-		}
-
-		return nil;
-	}
-
-	NSString *password = nil;
-
-	if (resultData)
-		password = [[NSString alloc] initWithData:resultData encoding:NSUTF8StringEncoding];
-	else
-	{
-		// There is an existing item, but we weren't able to get password data for it for some reason,
-		// Possibly as a result of an item being incorrectly entered by the previous code.
-		// Set the -1999 error so the code above us can prompt the user again.
-		if (error != nil)
-			*error = [NSError errorWithDomain:SDKeychainErrorDomain code:-1999 userInfo:nil];
-	}
-
-    if (cfResultData)
-        CFRelease(cfResultData);
-	return password;
+    return [self stringForKey:key serviceName:serviceName synchronizeViaiCloud:NO accessGroup:nil];
 }
 
-+ (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting error:(NSError * *)error
++ (BOOL)setString:(NSString*)string forKey:(NSString*)key serviceName:(NSString *)serviceName
 {
-	if (!username || !password || !serviceName)
-	{
-		if (error != nil)
-			*error = [NSError errorWithDomain:SDKeychainErrorDomain code:-2000 userInfo:nil];
-		return NO;
-	}
+    return [self setString:string forKey:key serviceName:serviceName synchronizeViaiCloud:NO accessGroup:nil];
+}
 
-	// See if we already have a password entered for these credentials.
-	NSError *getError = nil;
-	NSString *existingPassword = [SDKeychain getPasswordForUsername:username andServiceName:serviceName error:&getError];
-
-	if ([getError code] == -1999)
-	{
-		// There is an existing entry without a password properly stored (possibly as a result of the previous incorrect version of this code.
-		// Delete the existing item before moving on entering a correct one.
-
-		getError = nil;
-
-		[self deleteItemForUsername:username andServiceName:serviceName error:&getError];
-
-		if ([getError code] != noErr)
-		{
-			if (error != nil)
-				*error = getError;
-			return NO;
-		}
-	}
-	else 
-    if ([getError code] != noErr)
++ (NSString *)getPasswordForUsername:(NSString *)username andServiceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error
+{
+    if (!username || !serviceName)
     {
-		if (error != nil)
-			*error = getError;
-		return NO;
-	}
-
-	if (error != nil)
-		*error = nil;
-
-	OSStatus status = noErr;
-
-	if (existingPassword)
-	{
-		// We have an existing, properly entered item with a password.
-		// Update the existing item.
-
-		if (![existingPassword isEqualToString:password] && updateExisting)
-		{
-			//Only update if we're allowed to update existing.  If not, simply do nothing.
-
-			NSArray *keys = [[NSArray alloc] initWithObjects:
-                             (__bridge NSString *)kSecClass,
-                             (__bridge NSString *)kSecAttrAccessible,
-			                  kSecAttrService,
-			                  kSecAttrLabel,
-			                  kSecAttrAccount,
-			                  nil];
-
-			NSArray *objects = [[NSArray alloc] initWithObjects:
-                                (__bridge NSString *)kSecClassGenericPassword,
-                                (__bridge NSString *)kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-			                     serviceName,
-			                     serviceName,
-			                     username,
-			                     nil];
-
-			NSDictionary *query = [[NSDictionary alloc] initWithObjects:objects forKeys:keys];
-
-			status = SecItemUpdate((__bridge CFDictionaryRef)query, (__bridge CFDictionaryRef)[NSDictionary dictionaryWithObject:[password dataUsingEncoding:NSUTF8StringEncoding] forKey:(__bridge NSString *)kSecValueData]);
-		}
-	}
-	else
-	{
-		// No existing entry (or an existing, improperly entered, and therefore now
-		// deleted, entry).  Create a new entry.
-
-		NSArray *keys = [[NSArray alloc] initWithObjects:
-                         (__bridge NSString *)kSecClass,
-                         (__bridge NSString *)kSecAttrAccessible,
-		                  kSecAttrService,
-		                  kSecAttrLabel,
-		                  kSecAttrAccount,
-		                  kSecValueData,
-		                  nil];
-
-		NSArray *objects = [[NSArray alloc] initWithObjects:
-                            (__bridge NSString *)kSecClassGenericPassword,
-                            (__bridge NSString *)kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-		                     serviceName,
-		                     serviceName,
-		                     username,
-		                     [password dataUsingEncoding:NSUTF8StringEncoding],
-		                     nil];
-
-		NSDictionary *query = [[NSDictionary alloc] initWithObjects:objects forKeys:keys];
-
-		status = SecItemAdd((__bridge CFDictionaryRef)query, NULL);
-	}
-
-	if (error != nil && status != noErr)
-	{
-		// Something went wrong with adding the new item. Return the Keychain error code.
-		*error = [NSError errorWithDomain:SDKeychainErrorDomain code:status userInfo:nil];
-		return NO;
-	}
-
-	return YES;
-}
-
-+ (BOOL)deleteItemForUsername:(NSString *)username andServiceName:(NSString *)serviceName error:(NSError * *)error
-{
-    // Verify we have all of the required attributes to attempt a deletion
-	if (!username || !serviceName)
-	{
-		if (error != nil)
+        if (error != nil)
+            *error = [NSError errorWithDomain:SDKeychainErrorDomain code:-2000 userInfo:nil];
+        return nil;
+    }
+    
+    if (error != nil)
+        *error = nil;
+    
+    // Set up a query dictionary with the base query attributes: item type (generic), username, and service
+    NSMutableDictionary *query = [NSMutableDictionary dictionaryWithDictionary: @{
+                                                                                  (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+                                                                                  (__bridge id)kSecAttrAccount: username,
+                                                                                  (__bridge id)kSecAttrService: serviceName
+                                                                                  }];
+    
+#if !TARGET_IPHONE_SIMULATOR
+    if (accessGroup) {
+        query[(__bridge id)kSecAttrAccessGroup] = [NSString stringWithFormat:@"%@%@", [SDKeychain bundleSeedID], accessGroup];
+    }
+#endif
+    
+    if (synchronizeViaiCloud) {
+        query[(__bridge id)(kSecAttrSynchronizable)] = @YES;
+    }
+    
+    /*
+     NSArray *keys = [[NSArray alloc] initWithObjects:(__bridge NSString *)kSecClass, kSecAttrAccount, kSecAttrService, nil];
+     NSArray *objects = [[NSArray alloc] initWithObjects:(__bridge NSString *)kSecClassGenericPassword, username, serviceName, nil];
+     
+     NSMutableDictionary *query = [[NSMutableDictionary alloc] initWithObjects:objects forKeys:keys];
+     */
+    
+    // First do a query for attributes, in case we already have a Keychain item with no password data set.
+    // One likely way such an incorrect item could have come about is due to the previous (incorrect)
+    // version of this code (which set the password as a generic attribute instead of password data).
+    
+    NSMutableDictionary *attributeQuery = [query mutableCopy];
+    [attributeQuery setObject:(id) kCFBooleanTrue forKey:(__bridge id)kSecReturnAttributes];
+    CFTypeRef cfResult = NULL;
+    OSStatus status = SecItemCopyMatching( (__bridge CFDictionaryRef)attributeQuery, &cfResult);
+    if (cfResult)
+        CFRelease(cfResult);
+    
+    
+    if (status != noErr)
+    {
+        // No existing item found--simply return nil for the password
+        if (error != nil && status != errSecItemNotFound)
         {
-			*error = [NSError errorWithDomain:SDKeychainErrorDomain code:-2000 userInfo:nil];
+            //Only return an error if a real exception happened--not simply for "not found."
+            *error = [NSError errorWithDomain:SDKeychainErrorDomain code:status userInfo:nil];
         }
         
-		return NO;
-	}
+        return nil;
+    }
+    
+    // We have an existing item, now query for the password data associated with it.
+    
+    NSData *resultData = nil;
+    NSMutableDictionary *passwordQuery = [query mutableCopy];
+    [passwordQuery setObject:(id) kCFBooleanTrue forKey:(__bridge id)kSecReturnData];
+    
+    CFTypeRef cfResultData = NULL;
+    status = SecItemCopyMatching( (__bridge CFDictionaryRef)passwordQuery, &cfResultData );
+    resultData = (__bridge NSData*)cfResultData;
+    
+    
+    if (status != noErr)
+    {
+        if (status == errSecItemNotFound)
+        {
+            // We found attributes for the item previously, but no password now, so return a special error.
+            // Users of this API will probably want to detect this error and prompt the user to
+            // re-enter their credentials.  When you attempt to store the re-entered credentials
+            // using storeUsername:andPassword:forServiceName:updateExisting:error
+            // the old, incorrect entry will be deleted and a new one with a properly encrypted
+            // password will be added.
+            if (error != nil)
+                *error = [NSError errorWithDomain:SDKeychainErrorDomain code:-1999 userInfo:nil];
+        }
+        else
+        {
+            // Something else went wrong. Simply return the normal Keychain API error code.
+            if (error != nil)
+                *error = [NSError errorWithDomain:SDKeychainErrorDomain code:status userInfo:nil];
+        }
+        
+        return nil;
+    }
+    
+    NSString *password = nil;
+    
+    if (resultData)
+        password = [[NSString alloc] initWithData:resultData encoding:NSUTF8StringEncoding];
+    else
+    {
+        // There is an existing item, but we weren't able to get password data for it for some reason,
+        // Possibly as a result of an item being incorrectly entered by the previous code.
+        // Set the -1999 error so the code above us can prompt the user again.
+        if (error != nil)
+            *error = [NSError errorWithDomain:SDKeychainErrorDomain code:-1999 userInfo:nil];
+    }
+    
+    if (cfResultData)
+        CFRelease(cfResultData);
+    
+    return password;
+}
 
++ (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error
+{
+    if (!username || !password || !serviceName)
+    {
+        if (error != nil)
+            *error = [NSError errorWithDomain:SDKeychainErrorDomain code:-2000 userInfo:nil];
+        return NO;
+    }
+    
+    // See if we already have a password entered for these credentials.
+    NSError *getError = nil;
+    NSString *existingPassword = [SDKeychain getPasswordForUsername:username andServiceName:serviceName synchronizeViaiCloud:synchronizeViaiCloud accessGroup:accessGroup error:&getError];
+    
+    if ([getError code] == -1999)
+    {
+        // There is an existing entry without a password properly stored (possibly as a result of the previous incorrect version of this code.
+        // Delete the existing item before moving on entering a correct one.
+        
+        getError = nil;
+        
+        [self deleteItemForUsername:username andServiceName:serviceName synchronizeViaiCloud:synchronizeViaiCloud accessGroup:accessGroup error:&getError];
+        
+        if ([getError code] != noErr)
+        {
+            if (error != nil)
+                *error = getError;
+            return NO;
+        }
+    }
+    else
+        if ([getError code] != noErr)
+        {
+            if (error != nil)
+                *error = getError;
+            return NO;
+        }
+    
+    if (error != nil)
+        *error = nil;
+    
+    OSStatus status = noErr;
+    
+    NSMutableDictionary *query = [NSMutableDictionary dictionaryWithDictionary:@{
+                                                                                 (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+                                                                                 (__bridge NSString *)kSecAttrAccessible: (__bridge NSString *)kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+                                                                                 (__bridge id)kSecAttrService: serviceName,
+                                                                                 (__bridge id)kSecAttrLabel: serviceName,
+                                                                                 (__bridge id)kSecAttrAccount: username
+                                                                                 }];
+    
+#if !TARGET_IPHONE_SIMULATOR
+    if (accessGroup) {
+        query[(__bridge id)kSecAttrAccessGroup] = [NSString stringWithFormat:@"%@%@", [SDKeychain bundleSeedID], accessGroup];
+    }
+#endif
+    
+    if (synchronizeViaiCloud) {
+        query[(__bridge id)(kSecAttrSynchronizable)] = @YES;
+    }
+    
+    if (existingPassword)
+    {
+        // We have an existing, properly entered item with a password.
+        // Update the existing item.
+        
+        if (![existingPassword isEqualToString:password] && updateExisting)
+        {
+            //Only update if we're allowed to update existing.  If not, simply do nothing.
+            status = SecItemUpdate((__bridge CFDictionaryRef)query, (__bridge CFDictionaryRef)[NSDictionary dictionaryWithObject:[password dataUsingEncoding:NSUTF8StringEncoding] forKey:(__bridge NSString *)kSecValueData]);
+        }
+    }
+    else
+    {
+        // No existing entry (or an existing, improperly entered, and therefore now
+        // deleted, entry).  Create a new entry.
+        query[(__bridge id)kSecValueData] = [password dataUsingEncoding:NSUTF8StringEncoding];
+        
+        status = SecItemAdd((__bridge CFDictionaryRef)query, NULL);
+    }
+    
+    if (error != nil && status != noErr)
+    {
+        // Something went wrong with adding the new item. Return the Keychain error code.
+        *error = [NSError errorWithDomain:SDKeychainErrorDomain code:status userInfo:nil];
+        return NO;
+    }
+    
+    return YES;
+}
+
++ (BOOL)deleteItemForUsername:(NSString *)username andServiceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error
+{
+    // Verify we have all of the required attributes to attempt a deletion
+    if (!username || !serviceName)
+    {
+        if (error != nil)
+        {
+            *error = [NSError errorWithDomain:SDKeychainErrorDomain code:-2000 userInfo:nil];
+        }
+        
+        return NO;
+    }
+    
     // Attempt a regular username association deletion. This covers the deletion
     // of old passwords being stored in the keychain as well.
-    NSArray *keys = [[NSArray alloc] initWithObjects:
-                     (__bridge NSString *)kSecClass,
-                     kSecAttrService,
-                     kSecAttrLabel,
-                     kSecAttrAccount,
-                     kSecReturnAttributes,
-                     nil];
-
-    NSArray *objects = [[NSArray alloc] initWithObjects:
-                        (__bridge NSString *)kSecClassGenericPassword,
-                        serviceName,
-                        serviceName,
-                        username,
-                        kCFBooleanTrue,
-                        nil];
-
-	NSDictionary *query = [[NSDictionary alloc] initWithObjects:objects forKeys:keys];
-
-	OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
-
+    NSMutableDictionary *query = [NSMutableDictionary dictionaryWithDictionary:@{
+                                                                                 (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+                                                                                 (__bridge id)kSecAttrService: serviceName,
+                                                                                 (__bridge id)kSecAttrLabel: serviceName,
+                                                                                 (__bridge id)kSecAttrAccount: username,
+                                                                                 (__bridge id)kSecReturnAttributes: @YES
+                                                                                 }];
+    
+#if !TARGET_IPHONE_SIMULATOR
+    if (accessGroup) {
+        query[(__bridge id)kSecAttrAccessGroup] = [NSString stringWithFormat:@"%@%@", [SDKeychain bundleSeedID], accessGroup];
+    }
+#endif
+    
+    if (synchronizeViaiCloud) {
+        query[(__bridge id)(kSecAttrSynchronizable)] = @YES;
+    }
+    
+    OSStatus status = SecItemDelete((__bridge CFDictionaryRef)query);
+    
     if (status != noErr)
     {
         // Something went wrong with deleting the new item. Return the Keychain error code.
@@ -340,8 +374,54 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
         }
         return NO;
     }
+    
+    return YES;
+}
 
-	return YES;
+
++ (NSString *)getPasswordForUsername:(NSString *)username andServiceName:(NSString *)serviceName error:(NSError **)error
+{
+    return [self getPasswordForUsername:username andServiceName:serviceName synchronizeViaiCloud:NO accessGroup:nil error:error];
+}
+
++ (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting error:(NSError * *)error
+{
+    return [self storeUsername:username andPassword:password forServiceName:serviceName updateExisting:updateExisting synchronizeViaiCloud:NO accessGroup:nil error:error];
+}
+
++ (BOOL)deleteItemForUsername:(NSString *)username andServiceName:(NSString *)serviceName error:(NSError * *)error
+{
+    return [self deleteItemForUsername:username andServiceName:serviceName synchronizeViaiCloud:NO accessGroup:nil error:error];
+}
+
++ (NSString *)bundleSeedID
+{
+    static dispatch_once_t once;
+    static NSString *bundleSeedIDCached = nil;
+    
+    dispatch_once(&once, ^{
+        // Write a dummy value and extract the group name to get the Bundle Seed ID
+        NSDictionary *query = @{
+                                (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+                                (__bridge id)kSecAttrAccount: @"DummyToFindBundleSeed",
+                                (__bridge id)kSecAttrService: @"",
+                                (__bridge id)kSecReturnAttributes: (id)kCFBooleanTrue
+                                };
+        CFDictionaryRef result = nil;
+        OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&result);
+        if (status == errSecItemNotFound) {
+            status = SecItemAdd((__bridge CFDictionaryRef)query, (CFTypeRef *)&result);
+        }
+        
+        if (status == errSecSuccess) {
+            NSString *accessGroup = [(__bridge NSDictionary *)result objectForKey:(__bridge NSString *)kSecAttrAccessGroup];
+            NSArray *components = [accessGroup componentsSeparatedByString:@"."];
+            bundleSeedIDCached = [[components objectEnumerator] nextObject];
+            CFRelease(result);
+        }
+    });
+    
+    return bundleSeedIDCached;
 }
 
 @end
