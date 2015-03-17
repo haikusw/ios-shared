@@ -328,7 +328,7 @@
     NSAssert(image, @"Seeting a nil image for the credit card image.");
     
     {
-        if (image != _placeholderView.image && image.hash != _placeholderView.image.hash)
+        if (![image isEqual:_placeholderView.image])
         {
             __block UIView* previousPlaceholderView = _placeholderView;
             [UIView animateWithDuration:0.25
