@@ -19,7 +19,7 @@
 #define SDURLCONNECTION_MAX_CONCURRENT_CONNECTIONS 20
 #endif
 
-@interface SDURLConnectionAsyncDelegate : NSObject
+@interface SDURLConnectionAsyncDelegate : NSObject <NSURLConnectionDataDelegate, NSURLConnectionDelegate>
 {
 @public
     SDURLConnectionResponseBlock responseHandler;
@@ -30,6 +30,7 @@
 }
 
 @property (atomic, assign) BOOL isRunning;
+@property (atomic, assign) BOOL doNotFollowRedirects;
 
 - (id)initWithResponseHandler:(SDURLConnectionResponseBlock)newHandler;
 - (void)forceError:(SDURLConnection *)connection;
@@ -75,6 +76,14 @@
 }
 
 #pragma mark NSURLConnection delegate
+
+- (NSURLRequest *)connection:(NSURLConnection *)connection willSendRequest:(NSURLRequest *)request redirectResponse:(NSURLResponse *)response;
+{
+    if (response && self.doNotFollowRedirects) {
+        return nil;
+    }
+    return request;
+}
 
 - (void)connection:(SDURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
@@ -147,8 +156,13 @@ static NSOperationQueue *networkOperationQueue = nil;
 - (id)initWithRequest:(NSURLRequest *)request delegate:(id)delegate startImmediately:(BOOL)startImmediately
 {
     self = [super initWithRequest:request delegate:delegate startImmediately:startImmediately];
-    if ([delegate isKindOfClass:[SDURLConnectionAsyncDelegate class]])
+    if ([delegate isKindOfClass:[SDURLConnectionAsyncDelegate class]]) {
         self.asyncDelegate = delegate;
+        id doNotFollowRedirects = [NSURLProtocol propertyForKey:@"SDDoNotFollowRedirects" inRequest:request];
+        if ([doNotFollowRedirects isEqual:@YES]) {
+            self.asyncDelegate.doNotFollowRedirects = YES;
+        }
+    }
     return self;
 }
 
