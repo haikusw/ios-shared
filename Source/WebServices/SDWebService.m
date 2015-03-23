@@ -485,6 +485,11 @@ NSString *const SDWebServiceError = @"SDWebServiceError";
     }
 #endif
 
+    BOOL doNotFollowRedirects = [requestDetails boolForKey:@"doNotFollowRedirects"];
+    if (doNotFollowRedirects) {
+        [NSURLProtocol setProperty:@YES forKey:@"SDDoNotFollowRedirects" inRequest:request];
+    }
+
     // find any applicable cookies and queue them up.
     NSArray *cookieNames = [requestDetails arrayForKey:@"cookieNames"];
     NSMutableArray *cookieArray = [[NSMutableArray alloc] initWithCapacity:cookieNames.count];
