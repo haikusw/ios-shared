@@ -15,8 +15,8 @@ typedef NS_ENUM(NSUInteger, SDCardType)
 {
     SDCardTypeVisa,
     SDCardTypeMasterCard,
-    SDCardTypeAmex,
     SDCardTypeDiscover,
+    SDCardTypeAmex,
     SDCardTypeJCB,
     SDCardTypeDinersClub,
     SDCardTypeSamsClub,
