@@ -13,6 +13,7 @@
 @end
 
 @implementation SDAlertView
+@dynamic delegate;
 
 + (instancetype)showAlertWithTitle:(NSString *)title
 {
