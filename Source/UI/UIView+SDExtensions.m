@@ -7,6 +7,7 @@
 //
 
 #import "UIView+SDExtensions.h"
+#import "SDLog.h"
 #import "UIDevice+machine.h"
 
 @implementation UIView (SDExtensions)

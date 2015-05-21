@@ -8,6 +8,8 @@
 
 #import "NSObject+SDExtensions.h"
 
+@import UIKit;
+
 #import <objc/runtime.h>
 #import <objc/message.h>
 

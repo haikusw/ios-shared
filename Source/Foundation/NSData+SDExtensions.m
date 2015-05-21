@@ -8,6 +8,8 @@
 
 #import "NSData+SDExtensions.h"
 
+#import "SDLog.h"
+
 @implementation NSData (SDExtensions)
 
 - (id)JSONObjectMutable:(BOOL)shouldBeMutable error:(NSError **)error

@@ -7,6 +7,9 @@
 //
 
 #import "NSURLCache+SDExtensions.h"
+
+@import CoreGraphics;
+
 #import "NSCachedURLResponse+LeakFix.h"
 #import "NSURLRequest+SDExtensions.h"
 
