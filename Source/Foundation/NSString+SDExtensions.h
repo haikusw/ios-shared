@@ -6,7 +6,7 @@
 //  Copyright 2011 SetDirection. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
+@import UIKit;
 #import "ObjectiveCGenerics.h"
 
 GENERICSABLE(NSString)

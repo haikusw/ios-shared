@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "ios-shared.h"
 #import "SDDataMap.h"
 
 /**
