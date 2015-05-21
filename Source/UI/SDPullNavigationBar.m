@@ -8,6 +8,7 @@
 
 #import "SDPullNavigationBar.h"
 
+#import "NSString+SDExtensions.h"
 #import "SDPullNavigationBarAdornmentView.h"
 #import "SDPullNavigationBarBackground.h"
 #import "SDPullNavigationBarTabButton.h"

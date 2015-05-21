@@ -6,9 +6,12 @@
 //
 
 @import CoreLocation;
+@import UIKit;
 
 #import "SDLocationManager.h"
 #import "NSArray+SDExtensions.h"
+#import "SDLog.h"
+#import "UIDevice+machine.h"
 
 #import <objc/message.h>
 

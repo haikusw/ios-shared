@@ -8,6 +8,7 @@
 //  Copyright (c) 2013 Panaxiom Ltd. All rights reserved.
 
 #import "SDContentAlertView.h"
+#import "SDLog.h"
 #import "UIDevice+machine.h"
 
 static const CGFloat kSDContentAlertViewWidth = 270.0;

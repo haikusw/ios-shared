@@ -12,6 +12,7 @@
 #import "NSCachedURLResponse+LeakFix.h"
 #import "NSData+SDExtensions.h"
 #import "NSURLRequest+SDExtensions.h"
+#import "SDLog.h"
 
 NSString *const SDWebServiceError = @"SDWebServiceError";
 

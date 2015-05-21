@@ -7,6 +7,7 @@
 //
 
 #import "SDImageCache.h"
+#import "SDLog.h"
 #import "SDURLConnection.h"
 #import "NSURLCache+SDExtensions.h"
 #import "NSCachedURLResponse+LeakFix.h"

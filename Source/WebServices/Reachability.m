@@ -25,9 +25,11 @@
  POSSIBILITY OF SUCH DAMAGE. 
  */
 
+@import Foundation;
 @import SystemConfiguration;
 
 #import "Reachability.h"
+#import "SDLog.h"
 
 
 NSString *const kSDReachabilityChangedNotification = @"kSDReachabilityChangedNotification";

@@ -10,6 +10,9 @@
 
 #import "SDPullNavigationBarControlsView.h"
 
+#import "UIView+SDExtensions.h"
+
+
 @implementation SDPullNavigationBarControlsView
 
 - (instancetype)initWithEdge:(UIRectEdge)edge
