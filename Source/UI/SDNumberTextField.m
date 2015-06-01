@@ -7,6 +7,7 @@
 
 #import "SDNumberTextField.h"
 #import "NSString+SDExtensions.h"
+#import "SDMacros.h"
 
 @interface SDTextField()
 - (void)configureView;
@@ -65,9 +66,9 @@
 {
     if (![textField.text isEqualToString:self.currentFormattedText])
     {
-        @weakify(self);
+        @SDWeakify(self);
         dispatch_async(dispatch_get_main_queue(), ^{
-            @strongify(self);
+            @SDStrongify(self);
             textField.text = [self.unformattedText stringWithNumberFormat:self.format];
             self.currentFormattedText = textField.text;
             

@@ -7,6 +7,9 @@
 
 #import "SDSpanParser.h"
 
+#import "ios-shared.h"
+
+
 typedef NS_ENUM(NSUInteger, SRSpanMatchType)
 {
     SRSpanMatchTypeOpen = 0,

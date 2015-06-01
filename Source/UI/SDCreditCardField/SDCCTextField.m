@@ -7,6 +7,8 @@
 
 #import "SDCCTextField.h"
 
+#import "SDMacros.h"
+
 static NSString* const kSDTextFieldSpaceChar = @"\u200B";
 
 @implementation SDCCTextField
@@ -56,7 +58,7 @@ static NSString* const kSDTextFieldSpaceChar = @"\u200B";
     {
         if(self.text.length == 0)
         {
-            @strongify(self.delegate, delegate);
+            @SDStrongify(self.delegate, delegate);
 
             if([delegate respondsToSelector:@selector(ccTextFieldDidBackSpaceWhileTextIsEmpty:)])
             {

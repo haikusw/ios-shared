@@ -9,6 +9,7 @@
 
 #import "SDPickerView.h"
 #import "UIColor+SDExtensions.h"
+#import "SDMacros.h"
 
 typedef NS_ENUM(NSUInteger, SDPickerViewMode)
 {
@@ -58,7 +59,7 @@ typedef NS_ENUM(NSUInteger, SDPickerViewMode)
 {
     UIWindow *mainWindow = [[[UIApplication sharedApplication] windows] objectAtIndex:0];
     
-    @weakify(self);
+    @SDWeakify(self);
     // Animate away
     // First fade in
     [UIView animateWithDuration:0.5f animations:^{
@@ -69,7 +70,7 @@ typedef NS_ENUM(NSUInteger, SDPickerViewMode)
     } completion:^(BOOL finished) {
         // Now animate the screen down.
         [UIView animateWithDuration:0.2f animations:^{
-            @strongify(self);
+            @SDStrongify(self);
             self.modalScreenView.alpha = 1.0f;
         } completion:completion];
     }];
@@ -77,9 +78,9 @@ typedef NS_ENUM(NSUInteger, SDPickerViewMode)
 
 -(IBAction)doneAction:(id)sender
 {
-    @weakify(self);
+    @SDWeakify(self);
     [self dismissPickerWithCompletion:^(BOOL fin) {
-        @strongify(self);
+        @SDStrongify(self);
         [self.modalScreenView removeFromSuperview];
         [self addTarget:self action:@selector(startAction:) forControlEvents:UIControlEventTouchUpInside];
         switch (self.pickerMode)
@@ -113,9 +114,9 @@ typedef NS_ENUM(NSUInteger, SDPickerViewMode)
 
 -(IBAction)cancelAction:(id)sender
 {
-    @weakify(self);
+    @SDWeakify(self);
     [self dismissPickerWithCompletion:^(BOOL fin) {
-        @strongify(self);
+        @SDStrongify(self);
         [self.modalScreenView removeFromSuperview];
         [self addTarget:self action:@selector(startAction:) forControlEvents:UIControlEventTouchUpInside];
         switch (self.pickerMode)
@@ -155,7 +156,7 @@ typedef NS_ENUM(NSUInteger, SDPickerViewMode)
     self.modalScreenView.alpha = 0.0f;
     [mainWindow addSubview:self.modalScreenView];
     
-    @strongify(self.delegate, strongDelegate);
+    @SDStrongify(self.delegate, strongDelegate);
     if ([strongDelegate respondsToSelector:@selector(pickerViewWillShow:)])
     {
         [strongDelegate performSelector:@selector(pickerViewWillShow:) withObject:self];

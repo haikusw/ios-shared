@@ -11,6 +11,7 @@
 #import "SDCreditCardField.h"
 
 #import "SDCCTextField.h"
+#import "SDMacros.h"
 
 #import <QuartzCore/QuartzCore.h>
 
@@ -255,7 +256,7 @@
 
 - (void)stateCardNumber
 {
-    @strongify(self.delegate, delegate);
+    @SDStrongify(self.delegate, delegate);
     if([delegate respondsToSelector:@selector(creditCardFieldDidChangeState:)])
     {
         [delegate creditCardFieldDidChangeState:self];
@@ -441,7 +442,7 @@
 
 - (void)checkValid
 {
-    @strongify(self.delegate, delegate);
+    @SDStrongify(self.delegate, delegate);
     if([self isValid])
     {
         self.validState = YES;

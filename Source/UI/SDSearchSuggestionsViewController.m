@@ -8,6 +8,8 @@
 
 #import "SDSearchSuggestionsViewController.h"
 
+#import "SDMacros.h"
+
 @interface SDSearchSuggestionsViewController ()
 
 @property (nonatomic, copy) NSArray* searchSuggestions;
@@ -22,7 +24,7 @@
     
     self.tableView.backgroundColor = [UIColor whiteColor];
     
-    @strongify(self.delegate, delegate);
+    @SDStrongify(self.delegate, delegate);
     [delegate configureSearchSuggestionsViewController:self];
 }
 
@@ -32,7 +34,7 @@
     
     if(self.searchString.length > 0)
     {
-        @strongify(self.suggestionDataSource, dataSource);
+        @SDStrongify(self.suggestionDataSource, dataSource);
         
         [dataSource searchSuggestionsForString:searchString completion:^(NSArray* searchSuggestions)
         {
@@ -62,7 +64,7 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    @strongify(self.suggestionDataSource, dataSource);
+    @SDStrongify(self.suggestionDataSource, dataSource);
 
     return self.searchString.length > 0 ? (NSInteger)self.searchSuggestions.count : (NSInteger)[[dataSource recentSearchStrings] count];
 }
@@ -78,12 +80,12 @@
     }
     else
     {
-        @strongify(self.suggestionDataSource, dataSource);
+        @SDStrongify(self.suggestionDataSource, dataSource);
 
         cell.textLabel.text = [dataSource recentSearchStrings][(NSUInteger)indexPath.row];
     }
     
-    @strongify(self.delegate, delegate);
+    @SDStrongify(self.delegate, delegate);
     [delegate configureSuggestionTableCell:cell];
     
     return cell;
@@ -91,8 +93,8 @@
 
 -(void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    @strongify(self.delegate, delegate);
-    @strongify(self.usageDelegate, usageDelegate);
+    @SDStrongify(self.delegate, delegate);
+    @SDStrongify(self.usageDelegate, usageDelegate);
     
     if(self.searchString.length > 0)
     {
@@ -102,7 +104,7 @@
     }
     else
     {
-        @strongify(self.suggestionDataSource, dataSource);
+        @SDStrongify(self.suggestionDataSource, dataSource);
 
         NSString *searchText = [dataSource recentSearchStrings][(NSUInteger)indexPath.row];
         [usageDelegate searchRecentWithTerm:searchText];
@@ -112,7 +114,7 @@
 
 -(IBAction)clearButtonTapped:(UIButton*)clearButton
 {
-    @strongify(self.suggestionDataSource, dataSource);
+    @SDStrongify(self.suggestionDataSource, dataSource);
 
     [dataSource clearRecentSearches];
     

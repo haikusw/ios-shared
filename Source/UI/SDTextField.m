@@ -27,6 +27,10 @@
 
 #import "SDTextField.h"
 
+#import "UIDevice+machine.h"
+#import "UIView+SDExtensions.h"
+#import "SDMacros.h"
+
 @interface SDTextField ()
 @property (nonatomic, strong, readonly) UILabel *floatingLabel;
 @property (nonatomic, strong, readonly) UIToolbar *accessoryToolbar;
@@ -252,8 +256,8 @@
         UIBarButtonItem *spaceItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
         _doneItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(doneEditing:)];
         
-        @strongify(self.previousTextField, previousTextField);
-        @strongify(self.nextTextField, nextTextField);
+        @SDStrongify(self.previousTextField, previousTextField);
+        @SDStrongify(self.nextTextField, nextTextField);
         
         if ([UIDevice systemMajorVersion] < 7)
         {
@@ -304,8 +308,8 @@
 
 - (void)selectAdjacentResponder:(UISegmentedControl *)sender
 {
-    @strongify(self.previousTextField, previousTextField);
-    @strongify(self.nextTextField, nextTextField);
+    @SDStrongify(self.previousTextField, previousTextField);
+    @SDStrongify(self.nextTextField, nextTextField);
     
     NSInteger selection = sender.selectedSegmentIndex; // 0 = prev, 1 = next.
     if (selection == 0)
@@ -322,14 +326,14 @@
 
 - (void)gotoPreviousTextField:(id)sender
 {
-    @strongify(self.previousTextField, previousTextField);
+    @SDStrongify(self.previousTextField, previousTextField);
     if (previousTextField)
         [previousTextField becomeFirstResponder];
 }
 
 - (void)gotoNextTextField:(id)sender
 {
-    @strongify(self.nextTextField, nextTextField);
+    @SDStrongify(self.nextTextField, nextTextField);
     if (nextTextField)
         [nextTextField becomeFirstResponder];
 }
@@ -410,7 +414,7 @@
 - (void)setPreviousTextField:(SDTextField *)previousTextField
 {
     _previousTextField = previousTextField;
-    @strongify(_previousTextField, localTextField);
+    @SDStrongify(_previousTextField, localTextField);
     if (localTextField)
         self.inputAccessoryView = [self accessoryToolbar];
 }
@@ -418,7 +422,7 @@
 - (void)setNextTextField:(SDTextField *)nextTextField
 {
     _nextTextField = nextTextField;
-    @strongify(_nextTextField, localTextField);
+    @SDStrongify(_nextTextField, localTextField);
     if (localTextField)
         self.inputAccessoryView = [self accessoryToolbar];
 }

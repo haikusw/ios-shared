@@ -9,6 +9,8 @@
 
 #import "SDFormFieldContainer.h"
 
+#import "UIColor+SDExtensions.h"
+
 @implementation SDFormFieldContainer
 
 - (id)initWithFrame:(CGRect)frame

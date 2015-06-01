@@ -9,6 +9,7 @@
 #import "SDTextFieldPicker.h"
 #import "SDPickerView.h"
 #import "UIDevice+machine.h"
+#import "SDMacros.h"
 
 @interface SDPickerView()
 @property (nonatomic, readonly) UIToolbar *pickerBar;
@@ -40,7 +41,7 @@
     [bezierPath addCurveToPoint: CGPointMake(CGRectGetMinX(frame) + 0.79951 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.20049 * CGRectGetHeight(frame)) controlPoint1: CGPointMake(CGRectGetMinX(frame) + 0.39003 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.04428 * CGRectGetHeight(frame)) controlPoint2: CGPointMake(CGRectGetMinX(frame) + 0.64330 * CGRectGetWidth(frame), CGRectGetMinY(frame) + 0.04428 * CGRectGetHeight(frame))];
     [bezierPath closePath];
     
-    @strongify(self.owner, strongOwner);
+    @SDStrongify(self.owner, strongOwner);
     if (self.isSelected)
     {
         [strongOwner.pickerButtonColor setFill];
@@ -57,7 +58,7 @@
 // override the base class trigger.
 - (IBAction)startAction:(id)sender
 {
-    @strongify(self.owner, strongOwner);
+    @SDStrongify(self.owner, strongOwner);
     strongOwner.inputView = self.itemPicker;
     strongOwner.inputAccessoryView = self.pickerBar;
     [strongOwner reloadInputViews];
@@ -109,7 +110,7 @@
             // and move to the next field if we can.
             self.text = selectedItem;
             
-            @strongify(self.nextTextField, strongNextField);
+            @SDStrongify(self.nextTextField, strongNextField);
             if (strongNextField)
                 [strongNextField becomeFirstResponder];
             

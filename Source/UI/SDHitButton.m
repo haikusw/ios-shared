@@ -9,6 +9,8 @@
 
 #import "SDHitButton.h"
 
+#import "ios-shared.h"
+
 @implementation SDHitButton
 
 - (instancetype)initWithFrame:(CGRect)frame

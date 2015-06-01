@@ -11,10 +11,10 @@
 
 #import "UIImage+SDExtensions.h"
 #import <QuartzCore/QuartzCore.h>
-
 #import <Accelerate/Accelerate.h>
 #import <float.h>
 #include <tgmath.h>
+#import "SDLog.h"
 
 @implementation UIImage (SDExtensions)
 

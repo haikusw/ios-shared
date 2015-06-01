@@ -8,6 +8,8 @@
 
 #import "SDTextField.h"
 
+#import "NSString+SDExtensions.h"
+
 @interface SDTextFieldPicker : SDTextField
 
 @property (nonatomic, copy) NSArray<NSString> *pickerItems;
