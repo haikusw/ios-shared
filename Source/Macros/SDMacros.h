@@ -97,7 +97,7 @@
 
  */
 
-#define weakify(...) \
+#define SDWeakify(...) \
     try {} @finally {} \
     macro_dispatcher(weakify, __VA_ARGS__)(__VA_ARGS__)
 
@@ -105,7 +105,7 @@
  Like #weakify, but uses __unsafe_unretained instead.
  */
 
-#define unsafeify(...) \
+#define SDUnsafeify(...) \
     try {} @finally {} \
     macro_dispatcher(unsafeify, __VA_ARGS__)(__VA_ARGS__)
 
@@ -136,7 +136,7 @@
 
  */
 
-#define strongify(...) \
+#define SDStrongify(...) \
     try {} @finally {} \
     macro_dispatcher(strongify, __VA_ARGS__)(__VA_ARGS__)
 

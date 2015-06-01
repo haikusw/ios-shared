@@ -68,10 +68,10 @@ void const *SDImageViewURLAssociatedObjectKey = @"SDImageViewURLAssociatedObject
     
     self.image = placeholder;
 
-    @weakify(self);
+    @SDWeakify(self);
 
     [[SDImageCache sharedInstance] fetchImageAtURL:url completionBlock:^(UIImage *image, NSError *error) {
-        @strongify(self);
+        @SDStrongify(self);
         NSURL *originalURL = objc_getAssociatedObject(self, SDImageViewURLAssociatedObjectKey);
 
         // if the url's match on both sides, lets set it and/or wrap any error that comes back.
