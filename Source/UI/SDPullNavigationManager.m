@@ -129,7 +129,8 @@
 {
     // Dismiss any modals that might be currently visible.
     UINavigationController* selectedNavController = (UINavigationController*)self.globalPullNavController.selectedViewController;
-    if(selectedNavController.visibleViewController.presentingViewController) {
+    UIViewController *visibleViewController = selectedNavController.visibleViewController;
+    if(visibleViewController.presentingViewController && !visibleViewController.isBeingDismissed) {
         [selectedNavController.visibleViewController.presentingViewController dismissViewControllerAnimated:NO completion:^{
             // Now navigate.
             if([self navigateToTopLevelController:topLevelViewControllerClass])
