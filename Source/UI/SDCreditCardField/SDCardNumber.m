@@ -44,6 +44,8 @@
         NSString* first6Chars = [self.number substringWithRange:NSMakeRange(0, 6)];
         if([first6Chars isEqualToString:@"601136"])                   { return SDCardTypeSamsClub; }
         else if([first6Chars isEqualToString:@"601137"])              { return SDCardTypeSamsClubBusiness; }
+        else if([first6Chars isEqualToString:@"604599"])              { return SDCardTypeSamsClub; }
+        else if([first6Chars isEqualToString:@"604600"])              { return SDCardTypeSamsClubBusiness; }
     }
 
     // Handle the base credit cards kinds.
