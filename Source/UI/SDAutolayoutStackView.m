@@ -52,6 +52,7 @@
                                                                attribute:isVertical ? NSLayoutAttributeBottom : NSLayoutAttributeTrailing
                                                               multiplier:1.0
                                                                 constant:isVertical ? -self.edgeInsets.bottom : -self.edgeInsets.right];
+            [self addConstraint:self.lastConstraint];
         // removing a middle subview
         } else {
             // connect the previous and next subviews
