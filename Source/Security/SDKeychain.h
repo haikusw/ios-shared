@@ -38,7 +38,7 @@
 @interface SDKeychain : NSObject
 
 + (NSString *)getPasswordForUsername:(NSString *)username andServiceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error;
-+ (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error;
++ (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup makeAvailableInBackground:(BOOL)makeAvailableInBackground error:(NSError **)error;
 + (BOOL)deleteItemForUsername:(NSString *)username andServiceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error;
 + (NSString*)stringForKey:(NSString*)key serviceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup;
 + (BOOL)setString:(NSString*)string forKey:(NSString*)key serviceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup ;

@@ -240,7 +240,7 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
     return password;
 }
 
-+ (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error
++ (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup makeAvailableInBackground:(BOOL)makeAvailableInBackground error:(NSError **)error
 {
     if (!username || !password || !serviceName)
     {
@@ -281,10 +281,11 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
         *error = nil;
     
     OSStatus status = noErr;
-    
+
+    CFStringRef accessLevel = makeAvailableInBackground ? kSecAttrAccessibleAfterFirstUnlock : kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
     NSMutableDictionary *query = [NSMutableDictionary dictionaryWithDictionary:@{
                                                                                  (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
-                                                                                 (__bridge NSString *)kSecAttrAccessible: (__bridge NSString *)kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+                                                                                 (__bridge NSString *)kSecAttrAccessible: (__bridge NSString *)accessLevel,
                                                                                  (__bridge id)kSecAttrService: serviceName,
                                                                                  (__bridge id)kSecAttrLabel: serviceName,
                                                                                  (__bridge id)kSecAttrAccount: username
@@ -386,7 +387,7 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
 
 + (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting error:(NSError * *)error
 {
-    return [self storeUsername:username andPassword:password forServiceName:serviceName updateExisting:updateExisting synchronizeViaiCloud:NO accessGroup:nil error:error];
+    return [self storeUsername:username andPassword:password forServiceName:serviceName updateExisting:updateExisting synchronizeViaiCloud:NO accessGroup:nil makeAvailableInBackground:NO error:error];
 }
 
 + (BOOL)deleteItemForUsername:(NSString *)username andServiceName:(NSString *)serviceName error:(NSError * *)error
