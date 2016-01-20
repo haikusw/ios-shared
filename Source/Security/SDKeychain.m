@@ -127,6 +127,75 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
     return [self setString:string forKey:key serviceName:serviceName synchronizeViaiCloud:NO accessGroup:nil];
 }
 
++ (BOOL)isPasswordAvailableInBackgroundForUsername:(NSString *)username andServiceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error
+{
+    BOOL isAvailableInBackground = NO;
+    if (!username || !serviceName)
+    {
+        if (error != nil)
+            *error = [NSError errorWithDomain:SDKeychainErrorDomain code:-2000 userInfo:nil];
+        return nil;
+    }
+
+    if (error != nil)
+        *error = nil;
+
+    // Set up a query dictionary with the base query attributes: item type (generic), username, and service
+    NSMutableDictionary *query = [NSMutableDictionary dictionaryWithDictionary: @{
+                                                                                  (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+                                                                                  (__bridge id)kSecAttrAccount: username,
+                                                                                  (__bridge id)kSecAttrService: serviceName
+                                                                                  }];
+
+#if !TARGET_IPHONE_SIMULATOR
+    if (accessGroup) {
+        query[(__bridge id)kSecAttrAccessGroup] = [NSString stringWithFormat:@"%@%@", [SDKeychain bundleSeedID], accessGroup];
+    }
+#endif
+
+    if (synchronizeViaiCloud) {
+        query[(__bridge id)(kSecAttrSynchronizable)] = @YES;
+    }
+
+    /*
+     NSArray *keys = [[NSArray alloc] initWithObjects:(__bridge NSString *)kSecClass, kSecAttrAccount, kSecAttrService, nil];
+     NSArray *objects = [[NSArray alloc] initWithObjects:(__bridge NSString *)kSecClassGenericPassword, username, serviceName, nil];
+
+     NSMutableDictionary *query = [[NSMutableDictionary alloc] initWithObjects:objects forKeys:keys];
+     */
+
+    // First do a query for attributes, in case we already have a Keychain item with no password data set.
+    // One likely way such an incorrect item could have come about is due to the previous (incorrect)
+    // version of this code (which set the password as a generic attribute instead of password data).
+
+    NSMutableDictionary *attributeQuery = [query mutableCopy];
+    [attributeQuery setObject:(id) kCFBooleanTrue forKey:(__bridge id)kSecReturnAttributes];
+    CFTypeRef cfResult = NULL;
+    OSStatus status = SecItemCopyMatching( (__bridge CFDictionaryRef)attributeQuery, &cfResult);
+    NSString *accessLevel = [(__bridge NSDictionary*)cfResult objectForKey:(__bridge NSString*)kSecAttrAccessible];
+    if ([accessLevel isEqualToString:(__bridge NSString*)kSecAttrAccessibleAfterFirstUnlock] ||
+        [accessLevel isEqualToString:(__bridge NSString*)kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly])
+    {
+        isAvailableInBackground = YES;
+    }
+    if (cfResult)
+        CFRelease(cfResult);
+
+
+    if (status != noErr)
+    {
+        // No existing item found--simply return nil for the password
+        if (error != nil && status != errSecItemNotFound)
+        {
+            //Only return an error if a real exception happened--not simply for "not found."
+            *error = [NSError errorWithDomain:SDKeychainErrorDomain code:status userInfo:nil];
+        }
+
+        return NO;
+    }
+    return isAvailableInBackground;
+}
+
 + (NSString *)getPasswordForUsername:(NSString *)username andServiceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error
 {
     if (!username || !serviceName)
