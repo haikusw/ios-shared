@@ -127,6 +127,67 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
     return [self setString:string forKey:key serviceName:serviceName synchronizeViaiCloud:NO accessGroup:nil];
 }
 
++ (BOOL)isPasswordAvailableInBackgroundForUsername:(NSString *)username andServiceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error
+{
+    BOOL isAvailableInBackground = NO;
+    if (!username || !serviceName)
+    {
+        if (error != nil)
+            *error = [NSError errorWithDomain:SDKeychainErrorDomain code:-2000 userInfo:nil];
+        return NO;
+    }
+
+    if (error != nil)
+        *error = nil;
+
+    // Set up a query dictionary with the base query attributes: item type (generic), username, and service
+    NSMutableDictionary *query = [NSMutableDictionary dictionaryWithDictionary: @{
+                                                                                  (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
+                                                                                  (__bridge id)kSecAttrAccount: username,
+                                                                                  (__bridge id)kSecAttrService: serviceName
+                                                                                  }];
+
+#if !TARGET_IPHONE_SIMULATOR
+    if (accessGroup) {
+        query[(__bridge id)kSecAttrAccessGroup] = [NSString stringWithFormat:@"%@%@", [SDKeychain bundleSeedID], accessGroup];
+    }
+#endif
+
+    if (synchronizeViaiCloud) {
+        query[(__bridge id)(kSecAttrSynchronizable)] = @YES;
+    }
+
+    //search for the keychain item
+    //if found, check its access level
+    NSMutableDictionary *attributeQuery = [query mutableCopy];
+    [attributeQuery setObject:(id) kCFBooleanTrue forKey:(__bridge id)kSecReturnAttributes];
+    CFTypeRef cfResult = NULL;
+    OSStatus status = SecItemCopyMatching( (__bridge CFDictionaryRef)attributeQuery, &cfResult);
+    if (status == noErr)
+    {
+        NSString *accessLevel = [(__bridge NSDictionary*)cfResult objectForKey:(__bridge NSString*)kSecAttrAccessible];
+        if ([accessLevel isEqualToString:(__bridge NSString*)kSecAttrAccessibleAfterFirstUnlock] ||
+            [accessLevel isEqualToString:(__bridge NSString*)kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly])
+        {
+            isAvailableInBackground = YES;
+        }
+    }
+    if (cfResult)
+        CFRelease(cfResult);
+    if (status != noErr)
+    {
+        // No existing item found
+        if (error != nil)
+        {
+            //return an error if not found
+            *error = [NSError errorWithDomain:SDKeychainErrorDomain code:status userInfo:nil];
+        }
+
+        return NO;
+    }
+    return isAvailableInBackground;
+}
+
 + (NSString *)getPasswordForUsername:(NSString *)username andServiceName:(NSString *)serviceName synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error
 {
     if (!username || !serviceName)
@@ -240,7 +301,7 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
     return password;
 }
 
-+ (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup error:(NSError **)error
++ (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting synchronizeViaiCloud:(BOOL)synchronizeViaiCloud accessGroup:(NSString *)accessGroup makeAvailableInBackground:(BOOL)makeAvailableInBackground error:(NSError **)error
 {
     if (!username || !password || !serviceName)
     {
@@ -281,10 +342,11 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
         *error = nil;
     
     OSStatus status = noErr;
-    
+
+    CFStringRef accessLevel = makeAvailableInBackground ? kSecAttrAccessibleAfterFirstUnlock : kSecAttrAccessibleWhenUnlockedThisDeviceOnly;
     NSMutableDictionary *query = [NSMutableDictionary dictionaryWithDictionary:@{
                                                                                  (__bridge NSString *)kSecClass: (__bridge NSString *)kSecClassGenericPassword,
-                                                                                 (__bridge NSString *)kSecAttrAccessible: (__bridge NSString *)kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+                                                                                 (__bridge NSString *)kSecAttrAccessible: (__bridge NSString *)accessLevel,
                                                                                  (__bridge id)kSecAttrService: serviceName,
                                                                                  (__bridge id)kSecAttrLabel: serviceName,
                                                                                  (__bridge id)kSecAttrAccount: username
@@ -386,7 +448,7 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
 
 + (BOOL)storeUsername:(NSString *)username andPassword:(NSString *)password forServiceName:(NSString *)serviceName updateExisting:(BOOL)updateExisting error:(NSError * *)error
 {
-    return [self storeUsername:username andPassword:password forServiceName:serviceName updateExisting:updateExisting synchronizeViaiCloud:NO accessGroup:nil error:error];
+    return [self storeUsername:username andPassword:password forServiceName:serviceName updateExisting:updateExisting synchronizeViaiCloud:NO accessGroup:nil makeAvailableInBackground:NO error:error];
 }
 
 + (BOOL)deleteItemForUsername:(NSString *)username andServiceName:(NSString *)serviceName error:(NSError * *)error
