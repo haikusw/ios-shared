@@ -157,17 +157,8 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
         query[(__bridge id)(kSecAttrSynchronizable)] = @YES;
     }
 
-    /*
-     NSArray *keys = [[NSArray alloc] initWithObjects:(__bridge NSString *)kSecClass, kSecAttrAccount, kSecAttrService, nil];
-     NSArray *objects = [[NSArray alloc] initWithObjects:(__bridge NSString *)kSecClassGenericPassword, username, serviceName, nil];
-
-     NSMutableDictionary *query = [[NSMutableDictionary alloc] initWithObjects:objects forKeys:keys];
-     */
-
-    // First do a query for attributes, in case we already have a Keychain item with no password data set.
-    // One likely way such an incorrect item could have come about is due to the previous (incorrect)
-    // version of this code (which set the password as a generic attribute instead of password data).
-
+    //search for the keychain item
+    //if found, check its access level
     NSMutableDictionary *attributeQuery = [query mutableCopy];
     [attributeQuery setObject:(id) kCFBooleanTrue forKey:(__bridge id)kSecReturnAttributes];
     CFTypeRef cfResult = NULL;
@@ -181,9 +172,6 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
             isAvailableInBackground = YES;
         }
     }
-
-
-
     if (cfResult)
         CFRelease(cfResult);
     if (status != noErr)
