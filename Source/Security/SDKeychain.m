@@ -134,7 +134,7 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
     {
         if (error != nil)
             *error = [NSError errorWithDomain:SDKeychainErrorDomain code:-2000 userInfo:nil];
-        return nil;
+        return NO;
     }
 
     if (error != nil)
@@ -172,22 +172,26 @@ static NSString *SDKeychainErrorDomain = @"SDKeychainErrorDomain";
     [attributeQuery setObject:(id) kCFBooleanTrue forKey:(__bridge id)kSecReturnAttributes];
     CFTypeRef cfResult = NULL;
     OSStatus status = SecItemCopyMatching( (__bridge CFDictionaryRef)attributeQuery, &cfResult);
-    NSString *accessLevel = [(__bridge NSDictionary*)cfResult objectForKey:(__bridge NSString*)kSecAttrAccessible];
-    if ([accessLevel isEqualToString:(__bridge NSString*)kSecAttrAccessibleAfterFirstUnlock] ||
-        [accessLevel isEqualToString:(__bridge NSString*)kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly])
+    if (status == noErr)
     {
-        isAvailableInBackground = YES;
+        NSString *accessLevel = [(__bridge NSDictionary*)cfResult objectForKey:(__bridge NSString*)kSecAttrAccessible];
+        if ([accessLevel isEqualToString:(__bridge NSString*)kSecAttrAccessibleAfterFirstUnlock] ||
+            [accessLevel isEqualToString:(__bridge NSString*)kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly])
+        {
+            isAvailableInBackground = YES;
+        }
     }
+
+
+
     if (cfResult)
         CFRelease(cfResult);
-
-
     if (status != noErr)
     {
-        // No existing item found--simply return nil for the password
-        if (error != nil && status != errSecItemNotFound)
+        // No existing item found
+        if (error != nil)
         {
-            //Only return an error if a real exception happened--not simply for "not found."
+            //return an error if not found
             *error = [NSError errorWithDomain:SDKeychainErrorDomain code:status userInfo:nil];
         }
 
