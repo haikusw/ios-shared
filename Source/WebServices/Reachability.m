@@ -105,6 +105,7 @@ static void SDTMReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkR
 #pragma mark - class constructor methods
 +(instancetype)reachabilityWithHostname:(NSString*)hostname
 {
+#ifndef __clang_analyzer__
     SCNetworkReachabilityRef ref = SCNetworkReachabilityCreateWithName(NULL, [hostname UTF8String]);
     if (ref) 
     {
@@ -115,14 +116,15 @@ static void SDTMReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkR
 #else
         return [reachability autorelease];
 #endif
-
     }
+#endif
     
     return nil;
 }
 
 +(instancetype)reachabilityWithAddress:(const struct sockaddr_in *)hostAddress 
 {
+#ifndef __clang_analyzer__
     SCNetworkReachabilityRef ref = SCNetworkReachabilityCreateWithAddress(kCFAllocatorDefault, (const struct sockaddr*)hostAddress);
     if (ref) 
     {
@@ -134,6 +136,7 @@ static void SDTMReachabilityCallback(SCNetworkReachabilityRef target, SCNetworkR
         return [reachability autorelease];
 #endif
     }
+#endif
     
     return nil;
 }
