@@ -27,7 +27,7 @@
     BOOL isVertical = self.orientation == SDAutolayoutStackViewOrientationVertical;
     // if there will be remaining subviews
     if (self.subviews.count > 1) {
-        NSUInteger index = [self.subviews indexOfObject:self.lastView];
+        NSUInteger index = [self.subviews indexOfObject:subview];
         // if we are removing the first subview
         if (index == 0) {
             // find the new top and connect it
